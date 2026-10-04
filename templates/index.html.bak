@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SGR VILLAIN | Real-Time Command Center</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+
+<style>
+/* ============================================
+   CORE VARIABLES & SGR VILLAIN THEME
+============================================ */
+:root {
+    --bg-deep: #050106;
+    --bg-glass: rgba(15, 5, 20, 0.6);
+    --bg-card: rgba(20, 8, 25, 0.65);
+    --bg-card-hover: rgba(35, 10, 45, 0.8);
+    --bg-modal: rgba(12, 4, 15, 0.95);
+    
+    --border: rgba(255, 0, 85, 0.15);
+    --border-glow: rgba(138, 43, 226, 0.4);
+    
+    --villain-red: #ff003c;
+    --villain-purple: #8a2be2;
+    --villain-magenta: #ff00a0;
+    --villain-green: #00e676; /* For success states */
+    
+    --text-main: #f0f0f0;
+    --text-dim: #998899;
+    
+    --shadow-red: 0 0 20px rgba(255, 0, 60, 0.3);
+    --shadow-purple: 0 0 30px rgba(138, 43, 226, 0.3);
+    --blur-md: blur(16px);
+    
+    --smooth: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+    box-sizing: border-box; margin: 0; padding: 0;
+    font-family: 'Outfit', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-width: thin; scrollbar-color: var(--villain-purple) var(--bg-deep);
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: var(--villain-purple); border-radius: 10px; }
+
+body { background-color: var(--bg-deep); color: var(--text-main); height: 100vh; overflow: hidden; display: flex; }
+
+/* ============================================
+   AMBIENT BACKGROUND
+============================================ */
+.ambient-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: radial-gradient(circle at 50% 50%, var(--bg-deep) 40%, #000000 100%); }
+.glow-orb { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.35; animation: drift 25s infinite alternate ease-in-out; }
+.orb-red { width: 45vw; height: 45vw; background: var(--villain-red); top: -10%; left: -15%; }
+.orb-purple { width: 55vw; height: 55vw; background: var(--villain-purple); bottom: -20%; right: -15%; animation-delay: -5s; animation-duration: 20s; }
+
+@keyframes drift {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(10%, -10%) scale(1.1); }
+}
+
+/* ============================================
+   SIDEBAR NAVIGATION
+============================================ */
+.sidebar {
+    width: 280px; height: 100vh; background: var(--bg-glass); backdrop-filter: var(--blur-md);
+    border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 32px 24px; z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 16px; margin-bottom: 48px; }
+.brand-icon {
+    width: 44px; height: 44px; background: linear-gradient(135deg, var(--villain-red), var(--villain-purple));
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; color: #fff; box-shadow: var(--shadow-red);
+}
+.brand-name {
+    font-size: 24px; font-weight: 900; letter-spacing: 2px;
+    background: linear-gradient(90deg, #fff, var(--villain-red));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.nav-menu { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.nav-item {
+    display: flex; align-items: center; gap: 16px; padding: 14px 20px; border-radius: 12px;
+    color: var(--text-dim); text-decoration: none; font-weight: 600; font-size: 15px; cursor: pointer;
+    transition: var(--smooth); border: 1px solid transparent; text-transform: uppercase; letter-spacing: 1px;
+}
+.nav-item i { font-size: 18px; width: 24px; text-align: center; transition: var(--smooth); }
+.nav-item:hover { color: #fff; background: rgba(255, 0, 60, 0.05); }
+.nav-item.active {
+    color: #fff; background: linear-gradient(90deg, rgba(255,0,60,0.1), transparent);
+    border-left: 3px solid var(--villain-red); border-right: 1px solid var(--border);
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    box-shadow: inset 20px 0 20px -20px var(--villain-red);
+}
+.nav-item.active i { color: var(--villain-red); text-shadow: 0 0 10px var(--villain-red); }
+
+/* ============================================
+   MAIN CONTENT AREA (SPA PAGES)
+============================================ */
+.main-content { flex: 1; position: relative; overflow: hidden; }
+.page {
+    position: absolute; inset: 0; padding: 32px 40px; overflow-y: auto;
+    visibility: hidden; opacity: 0; pointer-events: none; display: flex; flex-direction: column;
+}
+.page.active { visibility: visible; opacity: 1; pointer-events: all; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 16px; flex-wrap: wrap; gap: 16px;}
+.page-title { font-size: 32px; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+.page-subtitle { color: var(--villain-purple); font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 2px;}
+
+/* Staggered Animations */
+.animate-up { opacity: 0; transform: translateY(40px) scale(0.95); }
+.page.active .animate-up { animation: cinematicPop 0.8s var(--smooth) forwards; }
+@keyframes cinematicPop { 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.del-1 { animation-delay: 0.1s; } .del-2 { animation-delay: 0.2s; } .del-3 { animation-delay: 0.3s; } .del-4 { animation-delay: 0.4s; }
+
+/* BUTTONS */
+.btn {
+    padding: 10px 20px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card);
+    color: var(--text-main); font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; transition: var(--smooth); display: inline-flex; align-items: center; gap: 10px;
+}
+.btn:hover { background: var(--bg-card-hover); border-color: var(--villain-purple); box-shadow: var(--shadow-purple); transform: translateY(-2px); }
+.btn-danger { background: linear-gradient(135deg, var(--villain-red), #990024); color: #fff; border: none; box-shadow: var(--shadow-red); }
+.btn-danger:hover { background: linear-gradient(135deg, #ff1a53, var(--villain-red)); box-shadow: 0 0 30px rgba(255,0,60,0.6); transform: translateY(-3px); }
+
+/* ============================================
+   DASHBOARD STATS
+============================================ */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.stat-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px;
+    backdrop-filter: var(--blur-md); transition: var(--smooth); position: relative;
+}
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--villain-purple); border-radius: 16px 0 0 16px; }
+.stat-card.red::before { background: var(--villain-red); }
+.stat-card:hover { transform: translateY(-5px); border-color: var(--border-glow); box-shadow: var(--shadow-purple); background: var(--bg-card-hover); }
+.stat-card.red:hover { border-color: rgba(255,0,60,0.3); box-shadow: var(--shadow-red); }
+.stat-icon { font-size: 24px; color: var(--villain-purple); margin-bottom: 12px; }
+.stat-card.red .stat-icon { color: var(--villain-red); }
+.stat-val { font-size: 32px; font-weight: 800; margin-bottom: 4px; font-family: 'JetBrains Mono', monospace; }
+.stat-label { color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;}
+.stat-foot { color: var(--villain-magenta); font-size: 10px; font-weight: 700; margin-top: 8px; letter-spacing: 1px;}
+
+/* ============================================
+   CONTROLS (FILTERS & SEARCH)
+============================================ */
+.controls-bar { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.search-box { flex: 1; position: relative; min-width: 250px; }
+.search-box i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--text-dim); }
+.search-box input {
+    width: 100%; padding: 12px 16px 12px 42px; border-radius: 8px; border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3); color: #fff; font-size: 13px; outline: none; transition: var(--smooth); font-family: 'JetBrains Mono', monospace;
+}
+.search-box input:focus { border-color: var(--villain-purple); background: rgba(138,43,226,0.05); }
+.filter-group { display: flex; gap: 4px; padding: 4px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid var(--border); }
+.filter-btn {
+    border: 0; background: transparent; color: var(--text-dim); padding: 8px 16px; border-radius: 6px;
+    cursor: pointer; font-size: 11px; font-weight: 700; letter-spacing: 1px; transition: var(--smooth); text-transform: uppercase;
+}
+.filter-btn:hover { color: #fff; }
+.filter-btn.active { color: #fff; background: rgba(138, 43, 226, 0.2); box-shadow: 0 0 15px rgba(138,43,226,0.3); }
+
+/* ============================================
+   TARGET NODES (ACCOUNTS)
+============================================ */
+.node-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; padding-bottom: 20px;}
+.node-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px; backdrop-filter: var(--blur-md); transition: var(--smooth); position: relative; overflow: hidden;
+}
+.node-card::after {
+    content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+    background: linear-gradient(to bottom, var(--villain-red), var(--villain-purple)); opacity: 0.7;
+}
+.node-card:hover { border-color: var(--villain-red); box-shadow: inset 0 0 20px rgba(255,0,60,0.1), 0 5px 20px rgba(0,0,0,0.5); transform: translateY(-3px); }
+
+.acc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.acc-id { display: flex; align-items: center; gap: 14px; min-width:0; }
+.acc-avatar {
+    position: relative; width: 48px; height: 48px; flex-shrink: 0;
+    background: rgba(255, 0, 60, 0.1); border: 1px solid rgba(255,0,60,0.3); border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; color: var(--villain-red); font-size: 20px;
+}
+.acc-level {
+    position: absolute; right: -6px; bottom: -6px; padding: 2px 6px; border-radius: 6px;
+    font-size: 9px; font-weight: 900; font-family: 'JetBrains Mono', monospace;
+    color: #fff; background: linear-gradient(135deg, var(--villain-red), var(--villain-purple));
+    box-shadow: 0 0 10px var(--villain-purple); border: 2px solid var(--bg-deep);
+}
+.acc-name { font-size: 15px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 8px; }
+.acc-region { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: 1px; color: var(--villain-purple); background: rgba(138,43,226,0.15); border: 1px solid rgba(138,43,226,0.3); }
+.acc-uid { display: flex; align-items: center; gap: 8px; margin-top: 4px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+.status-badge {
+    padding: 6px 10px; border-radius: 8px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px; letter-spacing: 1px; border: 1px solid; flex-shrink: 0;
+}
+.status-online { background: rgba(0, 230, 118, 0.1); color: var(--villain-green); border-color: rgba(0, 230, 118, 0.3); box-shadow: 0 0 10px rgba(0,230,118,0.2); }
+.status-match { background: rgba(255, 0, 60, 0.15); color: var(--villain-red); border-color: rgba(255, 0, 60, 0.4); box-shadow: 0 0 15px rgba(255,0,60,0.3); }
+.status-paused { background: rgba(153, 136, 153, 0.1); color: var(--text-dim); border-color: rgba(153, 136, 153, 0.3); }
+.status-error { background: rgba(255, 160, 0, 0.1); color: #ffa000; border-color: rgba(255, 160, 0, 0.3); }
+
+.acc-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.metric-box { padding: 10px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.05); }
+.metric-box span { display: block; color: var(--text-dim); font-size: 9px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+.metric-box strong { display: block; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #fff; }
+.metric-box.gain strong { color: var(--villain-green); text-shadow: 0 0 10px rgba(0,230,118,0.4); }
+
+.progress-block { margin-bottom: 16px; }
+.progress-top { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; }
+.progress-track { height: 6px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--villain-purple), var(--villain-red)); transition: width 0.8s ease; box-shadow: 0 0 10px var(--villain-red); }
+.progress-bot { display: flex; justify-content: space-between; margin-top: 6px; font-size: 10px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace; }
+.progress-bot .pct { color: var(--villain-red); font-weight: 700; }
+
+.acc-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
+.acc-time { color: var(--text-dim); font-size: 11px; display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', monospace;}
+.acc-actions { display: flex; gap: 8px; }
+.act-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: rgba(0,0,0,0.3);
+    color: var(--text-dim); cursor: pointer; font-size: 12px; transition: var(--smooth); display: flex; align-items: center; justify-content: center;
+}
+.act-btn:hover { background: rgba(138,43,226,0.1); color: #fff; border-color: var(--villain-purple); transform: translateY(-2px); }
+.act-btn.danger:hover { background: rgba(255,0,60,0.1); color: var(--villain-red); border-color: var(--villain-red); }
+
+/* ============================================
+   TERMINAL (CONSOLE)
+============================================ */
+.terminal-wrapper {
+    background: rgba(8, 2, 10, 0.85); border: 1px solid var(--border); border-radius: 16px;
+    flex: 1; display: flex; flex-direction: column; overflow: hidden; backdrop-filter: var(--blur-md); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+.terminal-header {
+    padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(20, 5, 25, 0.9);
+}
+.term-title { font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--villain-red); letter-spacing: 2px; }
+.terminal-body { padding: 20px; overflow-y: auto; flex: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.8; color: #d0d0d0; }
+.log-line { margin-bottom: 6px; word-break: break-word; display: flex; gap: 10px;}
+.log-ts { color: var(--villain-purple); flex-shrink: 0;}
+.log-msg.success { color: var(--villain-green); text-shadow: 0 0 8px rgba(0,230,118,0.3); }
+.log-msg.warning { color: #ffa000; }
+.log-msg.error { color: var(--villain-red); text-shadow: 0 0 8px rgba(255,0,60,0.3); }
+.log-msg.info { color: #fff; }
+
+/* ============================================
+   MODAL (ADD NODE)
+============================================ */
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: var(--smooth);
+}
+.modal-overlay.active { opacity: 1; pointer-events: all; }
+.modal-card {
+    background: var(--bg-modal); border: 1px solid var(--villain-red); padding: 32px; border-radius: 16px;
+    width: 100%; max-width: 450px; transform: translateY(50px) scale(0.9); transition: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 50px rgba(255, 0, 60, 0.15); position: relative; overflow: hidden;
+}
+.modal-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, var(--villain-purple), var(--villain-red)); }
+.modal-overlay.active .modal-card { transform: translateY(0) scale(1); }
+.modal-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; color: #fff; }
+
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; font-size: 11px; font-weight: 700; color: var(--villain-purple); margin-bottom: 8px; letter-spacing: 1px; }
+.input-group input, .input-group select, .input-group textarea {
+    width: 100%; padding: 14px; border-radius: 8px; background: rgba(0,0,0,0.4); border: 1px solid rgba(138,43,226,0.3);
+    color: #fff; font-size: 14px; font-family: 'JetBrains Mono', monospace; outline: none; transition: 0.3s;
+}
+.input-group select { cursor: pointer; font-family: 'Outfit', sans-serif; }
+.input-group select option { background: var(--bg-deep); color: #fff; }
+.input-group textarea { resize: vertical; min-height: 100px; }
+.input-group input:focus, .input-group select:focus, .input-group textarea:focus { border-color: var(--villain-red); background: rgba(255,0,60,0.05); box-shadow: 0 0 15px rgba(255,0,60,0.2); }
+
+/* ============================================
+   TOAST NOTIFICATIONS
+============================================ */
+.toast-container { position: fixed; bottom: 30px; right: 30px; z-index: 200; display: flex; flex-direction: column; gap: 12px; pointer-events: none;}
+.toast {
+    background: rgba(10, 2, 12, 0.95); border-left: 4px solid var(--villain-red); border-right: 1px solid var(--border); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 14px 20px; border-radius: 8px; backdrop-filter: var(--blur-md); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 13px; color: #fff;
+    transform: translateX(120px); opacity: 0; animation: toastIn 0.4s var(--smooth) forwards; box-shadow: 0 10px 30px rgba(0,0,0,0.5); pointer-events: auto;
+}
+.toast.success { border-left-color: var(--villain-green); }
+@keyframes toastIn { to { transform: translateX(0); opacity: 1; } }
+
+/* RESPONSIVE */
+@media(max-width: 900px) {
+    .sidebar { width: 80px; padding: 24px 12px; align-items: center;}
+    .brand-name, .nav-item span { display: none; }
+    .nav-item { justify-content: center; padding: 14px 0; width: 48px; border-radius: 12px;}
+    .page { padding: 24px 20px; }
+    .page-title { font-size: 24px; }
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .stats-grid, .node-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Ambient Glowing Background -->
+<div class="ambient-bg">
+    <div class="glow-orb orb-red"></div>
+    <div class="glow-orb orb-purple"></div>
+</div>
+
+<!-- Sidebar Menu -->
+<nav class="sidebar">
+    <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-skull"></i></div>
+        <div class="brand-name">SGR VILLAIN</div>
+    </div>
+    
+    <div class="nav-menu">
+        <a class="nav-item active" onclick="switchPage('core', this)">
+            <i class="fa-solid fa-crosshairs"></i> <span>Cmd Core</span>
+        </a>
+        <a class="nav-item" onclick="switchPage('targets', this)">
+            <i class="fa-solid fa-network-wired"></i> <span>Target Nodes</span>
+        </a>
+        <a class="nav-item" onclick="switchPage('terminal', this)">
+            <i class="fa-solid fa-terminal"></i> <span>Uplink Term</span>
+        </a>
+    </div>
+
+    <div style="margin-top:auto; text-align:center; padding-top:20px; border-top: 1px solid var(--border);">
+        <i class="fa-solid fa-server" style="color:var(--villain-purple); font-size: 20px; margin-bottom:8px;"></i>
+        <div style="font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform:uppercase;">Engine Status</div>
+        <div style="font-size: 12px; font-weight: 800; color: var(--villain-green);" id="side-status">ONLINE</div>
+    </div>
+</nav>
+
+<!-- MAIN CONTENT -->
+<main class="main-content">
+    
+    <!-- PAGE 1: COMMAND CORE (DASHBOARD) -->
+    <section id="page-core" class="page active">
+        <div class="page-header animate-up">
+            <div>
+                <h1 class="page-title">COMMAND CORE</h1>
+                <p class="page-subtitle">Real-time systemic analytics</p>
+            </div>
+            <button class="btn btn-danger" onclick="fetchStats()"><i class="fa-solid fa-rotate"></i> Force Sync</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card red animate-up del-1">
+                <div class="stat-icon"><i class="fa-solid fa-skull-crossbones"></i></div>
+                <div class="stat-val" id="stat-accounts">0</div>
+                <div class="stat-label">Total Linked Nodes</div>
+                <div class="stat-foot" id="stat-online">0 Online</div>
+            </div>
+            <div class="stat-card animate-up del-2">
+                <div class="stat-icon"><i class="fa-solid fa-bolt"></i></div>
+                <div class="stat-val" id="stat-started">0</div>
+                <div class="stat-label">Executions Started</div>
+                <div class="stat-foot" id="stat-per-hour">~0 / hour</div>
+            </div>
+            <div class="stat-card red animate-up del-3">
+                <div class="stat-icon"><i class="fa-solid fa-fire-flame-curved"></i></div>
+                <div class="stat-val" id="stat-exp">+0</div>
+                <div class="stat-label">Total EXP Harvested</div>
+                <div class="stat-foot" id="stat-exp-rate">~0 EXP/hr</div>
+            </div>
+            <div class="stat-card animate-up del-4">
+                <div class="stat-icon"><i class="fa-solid fa-clock"></i></div>
+                <div class="stat-val" id="stat-uptime">00:00:00</div>
+                <div class="stat-label">System Uptime</div>
+                <div class="stat-foot" id="stat-active-matches">0 Active Matches</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE 2: TARGET NODES -->
+    <section id="page-targets" class="page">
+        <div class="page-header animate-up">
+            <div>
+                <h1 class="page-title">TARGET NODES</h1>
+                <p class="page-subtitle">Manage connected accounts</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" id="btn-pause-all" onclick="togglePauseAll()"><i class="fa-solid fa-pause"></i> Pause All</button>
+                <button class="btn btn-danger" onclick="openAddModal()"><i class="fa-solid fa-plus"></i> Inject Node</button>
+            </div>
+        </div>
+
+        <div class="controls-bar animate-up del-1">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input id="account-search" type="text" placeholder="Search UID or Nickname..." oninput="filterAccounts()">
+            </div>
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="setFilter('all', this)">ALL</button>
+                <button class="filter-btn" onclick="setFilter('in_match', this)">MATCH</button>
+                <button class="filter-btn" onclick="setFilter('online', this)">ONLINE</button>
+                <button class="filter-btn" onclick="setFilter('paused', this)">PAUSED</button>
+            </div>
+        </div>
+
+        <div class="node-grid animate-up del-2" id="accounts-container">
+            <!-- Dynamic Node Cards generated via JS -->
+            <div style="color:var(--text-dim); padding:40px; text-align:center; grid-column: 1/-1;">
+                <i class="fa-solid fa-circle-notch fa-spin" style="font-size:24px; margin-bottom:12px; color:var(--villain-red);"></i>
+                <p>Initializing connection to backend...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- PAGE 3: TERMINAL -->
+    <section id="page-terminal" class="page">
+        <div class="page-header animate-up">
+            <div>
+                <h1 class="page-title">UPLINK TERMINAL</h1>
+                <p class="page-subtitle">Live backend execution logs</p>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn" id="btn-autoscroll" onclick="toggleAutoScroll()" style="background:rgba(138,43,226,0.2);"><i class="fa-solid fa-arrow-down"></i> Auto-Scroll</button>
+                <button class="btn btn-danger" onclick="clearLogs()"><i class="fa-solid fa-trash"></i> Wipe Logs</button>
+            </div>
+        </div>
+
+        <div class="controls-bar animate-up del-1" style="margin-bottom:16px;">
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="setLogFilter('all', this)">ALL LOGS</button>
+                <button class="filter-btn" onclick="setLogFilter('match', this)">MATCHES</button>
+                <button class="filter-btn" onclick="setLogFilter('success', this)">EXP / SUCCESS</button>
+                <button class="filter-btn" onclick="setLogFilter('error', this)">ERRORS</button>
+            </div>
+        </div>
+
+        <div class="terminal-wrapper animate-up del-2">
+            <div class="terminal-header">
+                <div class="term-title">SGR_VILLAIN@backend:~#</div>
+            </div>
+            <div class="terminal-body" id="console-stream" onscroll="handleLogScroll()">
+                <!-- Logs from backend -->
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ADD NODE MODAL -->
+<div class="modal-overlay" id="addModal">
+    <div class="modal-card">
+        <h2 class="modal-title">INJECT NEW NODE</h2>
+        <p style="color:var(--text-dim); font-size:13px; margin-bottom:24px;">Provide credentials to deploy a new instance to the server.</p>
+        
+        <form onsubmit="submitAddAccount(event)">
+            <div class="input-group">
+                <label>AUTHENTICATION TYPE</label>
+                <select id="acc-type" onchange="toggleFormType()">
+                    <option value="guest">Guest Credentials (UID/Pass)</option>
+                    <option value="token">Direct Access Token</option>
+                </select>
+            </div>
+
+            <div id="guest-inputs">
+                <div class="input-group">
+                    <label>TARGET UID</label>
+                    <input type="text" id="acc-uid" placeholder="Enter Unique ID" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label>PASSWORD / KEY</label>
+                    <input type="password" id="acc-password" placeholder="••••••••••••" autocomplete="off">
+                </div>
+            </div>
+
+            <div id="token-inputs" style="display:none">
+                <div class="input-group">
+                    <label>ACCESS TOKEN PAYLOAD</label>
+                    <textarea id="acc-token" placeholder="Paste full token here..."></textarea>
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px;">
+                <button type="button" class="btn" onclick="closeAddModal()">ABORT</button>
+                <button type="submit" class="btn btn-danger"><i class="fa-solid fa-skull"></i> DEPLOY NODE</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastBox"></div>
+
+<script>
+/* ============================================
+   REAL CONFIG & LOGIC (From Original Request)
+============================================ */
+const EXP_TABLE = {
+1:0,2:48,3:202,4:544,5:1012,6:1844,7:2792,8:3800,9:4870,10:6004,
+11:7192,12:8448,13:9760,14:11140,15:12566,16:14060,17:15610,18:17224,19:18902,20:20632,
+21:22424,22:24278,23:26192,24:28166,25:30200,26:32294,27:34448,28:37804,29:41274,30:44870,
+31:48582,32:53394,33:58566,34:64096,35:69994,36:76460,37:83506,38:91128,39:99322,40:108092,
+41:120144,42:133266,43:147472,44:162760,45:179126,46:196572,47:215368,48:235516,49:257010,50:279860,
+51:304056,52:348318,53:394982,54:444044,55:495508,56:549364,57:633756,58:721744,59:813336,60:908522,
+61:1041438,62:1180352,63:1325266,64:1476184,65:1634300,66:1840946,67:2056594,68:2281242,69:2514880,70:2757530,
+71:3059506,72:3372284,73:3699456,74:4041030,75:4397002,76:4829104,77:5282204,78:5756304,79:6251408,80:6776502,
+81:7381324,82:8043154,83:8752982,84:9510808,85:10316338,86:11277190,87:12291748,88:13360304,89:14482858,90:15659418,
+91:17026708,92:18453950,93:19941280,94:21488570,95:23095858,96:24763138,97:26490428,98:28378704,99:30124996,100:32032884
+};
+
+let cachedAccounts = [];
+let cachedLogs = [];
+let activeFilter = "all";
+let activeLogFilter = "all";
+let autoScroll = true;
+let clientStart = Date.now();
+
+// Initial Fetch on load
+window.addEventListener('DOMContentLoaded', () => {
+    fetchStats();
+});
+
+/* ============================================
+   SPA ROUTING LOGIC
+============================================ */
+function switchPage(pageId, navElement) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    navElement.classList.add('active');
+
+    const pages = document.querySelectorAll('.page');
+    pages.forEach(p => p.classList.remove('active'));
+
+    setTimeout(() => {
+        document.getElementById('page-' + pageId).classList.add('active');
+        // Re-trigger progress bar animations if entering targets page
+        if(pageId === 'targets') {
+            setTimeout(filterAccounts, 100); 
+        }
+    }, 50);
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+============================================ */
+function toast(message, type = "info") {
+    const box = document.getElementById('toastBox');
+    const t = document.createElement('div');
+    t.className = 'toast ' + (type === 'success' ? 'success' : '');
+    
+    let iconHtml = '<i class="fa-solid fa-terminal" style="color:var(--villain-purple)"></i>';
+    if(type === 'success') iconHtml = '<i class="fa-solid fa-check" style="color:var(--villain-green)"></i>';
+    if(type === 'error') iconHtml = '<i class="fa-solid fa-skull" style="color:var(--villain-red)"></i>';
+
+    t.innerHTML = `${iconHtml} <span>${esc(message)}</span>`;
+    box.appendChild(t);
+
+    setTimeout(() => {
+        t.classList.add('hide');
+        setTimeout(() => t.remove(), 400); 
+    }, 4000);
+}
+
+/* ============================================
+   MODAL LOGIC
+============================================ */
+function openAddModal() { document.getElementById('addModal').classList.add('active'); }
+function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+function toggleFormType() {
+    const t = document.getElementById("acc-type").value;
+    document.getElementById("guest-inputs").style.display = t === "guest" ? "block" : "none";
+    document.getElementById("token-inputs").style.display = t === "token" ? "block" : "none";
+}
+
+/* ============================================
+   REAL API ACTIONS (Matches Backend)
+============================================ */
+async function submitAddAccount(e){
+    e.preventDefault();
+    const type = document.getElementById("acc-type").value;
+    let payload = {};
+
+    if(type === "guest"){
+        const uid = document.getElementById("acc-uid").value.trim();
+        const pass = document.getElementById("acc-password").value.trim();
+        if(!uid || !pass){ toast("Credentials required", "error"); return; }
+        payload = {uid, password:pass};
+    } else {
+        const token = document.getElementById("acc-token").value.trim();
+        if(!token){ toast("Token required", "error"); return; }
+        payload = {token};
+    }
+
+    try {
+        const r = await fetch("/api/account/add", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify(payload)
+        });
+        const d = await r.json();
+        if(d.status === "ok"){
+            closeAddModal();
+            toast("Node deployed successfully.", "success");
+            fetchStats();
+        } else {
+            toast(d.error || "Failed to deploy node", "error");
+        }
+    } catch(err){ toast("Backend Connection Failed", "error"); }
+}
+
+async function deleteAccount(uid, authUid=""){
+    if(!confirm(`Terminate node ${uid}? This action is irreversible.`)) return;
+    try {
+        const r = await fetch("/api/account/delete", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid, auth_uid:authUid})
+        });
+        const d = await r.json();
+        if(d.status === "ok"){
+            toast(`Node ${uid} terminated.`, "success");
+            const c = document.getElementById("acc-"+uid);
+            if(c) c.remove();
+            fetchStats();
+        } else {
+            toast(d.error || "Termination failed", "error");
+        }
+    } catch(e){ toast("Backend Connection Failed", "error"); }
+}
+
+async function refreshAcc(uid){
+    try {
+        toast(`Force syncing ${uid}...`, "info");
+        await fetch("/api/account/refresh", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid})
+        });
+        setTimeout(fetchStats, 800);
+    } catch(e){ toast("Sync failed", "error"); }
+}
+
+async function restartAcc(uid){
+    try {
+        toast(`Rebooting ${uid} execution process...`, "info");
+        await fetch("/api/account/restart", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid})
+        });
+        setTimeout(fetchStats, 800);
+    } catch(e){ toast("Reboot failed", "error"); }
+}
+
+async function togglePause(uid){
+    try {
+        const r = await fetch("/api/account/pause", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({uid})
+        });
+        const d = await r.json();
+        if(d.status === "ok"){
+            toast(d.is_paused ? `Execution halted for ${uid}` : `Execution resumed for ${uid}`, d.is_paused ? "info" : "success");
+            fetchStats();
+        } else { toast(d.error || "Action failed", "error"); }
+    } catch(e){ toast("Backend Connection Failed", "error"); }
+}
+
+async function togglePauseAll(){
+    try {
+        const r = await fetch("/api/account/pause_all", {method:"POST"});
+        const d = await r.json();
+        if(d.status === "ok"){
+            toast(d.all_paused ? "All nodes suspended globally" : "All nodes executing globally", d.all_paused ? "info" : "success");
+            fetchStats();
+        } else { toast(d.error || "Failed", "error"); }
+    } catch(e){ toast("Backend Connection Failed", "error"); }
+}
+
+/* ============================================
+   FILTERS & DOM RENDERING (ACCOUNTS)
+============================================ */
+function setFilter(f, btn){
+    activeFilter = f;
+    document.querySelectorAll(".controls-bar .filter-btn").forEach(x=>x.classList.remove("active"));
+    if(btn) btn.classList.add("active");
+    filterAccounts();
+}
+
+function filterAccounts(){
+    const q = (document.getElementById("account-search").value || "").toLowerCase().trim();
+    document.querySelectorAll(".node-card").forEach(card=>{
+        const uid = (card.dataset.uid || "").toLowerCase();
+        const nick = (card.dataset.nick || "").toLowerCase();
+        const st = (card.dataset.status || "").toLowerCase();
+        const paused = card.dataset.paused === "1";
+
+        const matchSearch = !q || uid.includes(q) || nick.includes(q);
+        let matchFilter = true;
+
+        if(activeFilter === "in_match") matchFilter = st.includes("match") && !paused;
+        else if(activeFilter === "online") matchFilter = (st.includes("online") || st.includes("search")) && !paused;
+        else if(activeFilter === "paused") matchFilter = paused || st.includes("paused");
+
+        card.style.display = matchSearch && matchFilter ? "block" : "none";
+        
+        // Retrigger progress bar width transition if visible
+        if(card.style.display === "block") {
+            const bar = card.querySelector('.progress-fill');
+            if(bar) bar.style.width = bar.getAttribute('data-target') + '%';
+        }
+    });
+}
+
+function renderAccounts(accounts){
+    const container = document.getElementById("accounts-container");
+
+    const allPaused = accounts.length > 0 && accounts.every(a=>a.is_paused || a.status === "PAUSED");
+    const pb = document.getElementById("btn-pause-all");
+    pb.innerHTML = allPaused
+        ? '<i class="fa-solid fa-play"></i> Resume All'
+        : '<i class="fa-solid fa-pause"></i> Pause All';
+
+    if(accounts.length === 0){
+        container.innerHTML = `
+            <div style="text-align:center; padding: 60px 20px; color: var(--text-dim); grid-column:1/-1;">
+                <i class="fa-solid fa-ghost" style="font-size: 32px; margin-bottom: 16px; color:var(--villain-purple);"></i>
+                <p style="margin-bottom: 24px">No active nodes detected in the matrix.</p>
+                <button class="btn btn-danger" onclick="openAddModal()">Inject First Node</button>
+            </div>`;
+        return;
+    }
+
+    if(container.querySelector(".fa-ghost") || container.querySelector(".fa-circle-notch")) container.innerHTML = "";
+
+    const uids = new Set(accounts.map(a=>String(a.uid)));
+    container.querySelectorAll(".node-card").forEach(c=>{
+        if(!uids.has(c.dataset.uid)) c.remove();
+    });
+
+    accounts.forEach(acc=>{
+        const uid = String(acc.uid);
+        const level = Math.max(1, parseInt(acc.level) || 1);
+        const nextLvl = Math.min(100, level + 1);
+        const baseExp = EXP_TABLE[level] ?? 0;
+        const targetExp = EXP_TABLE[nextLvl] ?? baseExp + 50000;
+        const needed = Math.max(1, targetExp - baseExp);
+        const curExp = Number(acc.current_exp || 0);
+        const earned = Math.max(0, curExp - baseExp);
+        const remaining = Math.max(0, targetExp - curExp);
+        const pct = level >= 100 ? 100 : Math.min(100, Math.max(0, earned / needed * 100));
+
+        const paused = Boolean(acc.is_paused || acc.status === "PAUSED");
+        const status = paused ? "PAUSED" : (acc.status || "ONLINE");
+
+        let cls = "status-online";
+        let icon = '<i class="fa-solid fa-globe"></i>';
+        if(paused) { cls = "status-paused"; icon = '<i class="fa-solid fa-pause"></i>'; }
+        else if(status === "IN_MATCH") { cls = "status-match"; icon = '<i class="fa-solid fa-crosshairs"></i>'; }
+        else if(status === "SEARCHING") { cls = "status-error"; icon = '<i class="fa-solid fa-radar"></i>'; } /* Custom style mapping */
+        else if(status !== "ONLINE") { cls = "status-error"; icon = '<i class="fa-solid fa-triangle-exclamation"></i>'; }
+
+        const stText = paused ? "PAUSED" : status === "IN_MATCH" ? `IN MATCH (${acc.active_matches || 1})` : status;
+
+        let card = document.getElementById("acc-" + uid);
+        if(!card){
+            card = document.createElement("div");
+            card.id = "acc-" + uid;
+            card.className = "node-card animate-up";
+            container.appendChild(card);
+        }
+
+        card.dataset.uid = uid;
+        card.dataset.nick = acc.nickname || "";
+        card.dataset.status = cls.replace("status-", "");
+        card.dataset.paused = paused ? "1" : "0";
+
+        card.innerHTML = `
+            <div class="acc-head">
+                <div class="acc-id">
+                    <div class="acc-avatar">
+                        <i class="fa-solid fa-user-astronaut"></i>
+                        <span class="acc-level">L${level}</span>
+                    </div>
+                    <div>
+                        <div class="acc-name">
+                            ${esc(acc.nickname || "Unknown")}
+                            <span class="acc-region">${esc(acc.region || "BD")}</span>
+                        </div>
+                        <div class="acc-uid">
+                            UID: ${esc(uid)}
+                            <i class="fa-regular fa-copy" style="cursor:pointer;" onclick="copyUid('${escAttr(uid)}')" title="Copy UID"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="status-badge ${cls}">
+                    ${icon} ${stText}
+                </div>
+            </div>
+
+            <div class="acc-metrics">
+                <div class="metric-box">
+                    <span>Base EXP</span>
+                    <strong>${Number(acc.initial_exp || 0).toLocaleString()}</strong>
+                </div>
+                <div class="metric-box">
+                    <span>Current</span>
+                    <strong>${curExp.toLocaleString()}</strong>
+                </div>
+                <div class="metric-box gain">
+                    <span>Harvested</span>
+                    <strong>+${Number(acc.gained_exp || 0).toLocaleString()}</strong>
+                </div>
+            </div>
+
+            <div class="progress-block">
+                <div class="progress-top">
+                    <span>LVL ${level} → LVL ${nextLvl}</span>
+                    <span>${remaining.toLocaleString()} EXP LEFT</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" data-target="${pct.toFixed(1)}" style="width:0%"></div>
+                </div>
+                <div class="progress-bot">
+                    <span>${earned.toLocaleString()} / ${needed.toLocaleString()}</span>
+                    <span class="pct">${pct.toFixed(1)}%</span>
+                </div>
+            </div>
+
+            <div class="acc-foot">
+                <span class="acc-time" data-uid="${escAttr(uid)}" data-uptime="${Math.floor(acc.uptime_seconds || 0)}" data-paused="${paused ? 1 : 0}">
+                    <i class="fa-solid fa-stopwatch"></i> ${fmtDur(acc.uptime_seconds || 0)}
+                </span>
+                <div class="acc-actions">
+                    <button class="act-btn" onclick="togglePause('${escAttr(uid)}')" title="${paused ? "Resume" : "Pause"}">
+                        <i class="fa-solid ${paused ? "fa-play" : "fa-pause"}"></i>
+                    </button>
+                    <button class="act-btn" onclick="restartAcc('${escAttr(uid)}')" title="Reboot Process">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                    <button class="act-btn" onclick="refreshAcc('${escAttr(uid)}')" title="Force Sync">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                    </button>
+                    <button class="act-btn danger" onclick="deleteAccount('${escAttr(uid)}', '${escAttr(acc.auth_uid || "")}')" title="Terminate Node">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </div>`;
+    });
+
+    filterAccounts(); // Apply filters and trigger progress bars
+}
+
+/* ============================================
+   TERMINAL (LOGS)
+============================================ */
+function setLogFilter(f, btn){
+    activeLogFilter = f;
+    document.querySelectorAll("#page-terminal .filter-btn").forEach(x=>{
+        if(x.id !== "btn-autoscroll") x.classList.remove("active");
+    });
+    if(btn) btn.classList.add("active");
+    renderLogs(cachedLogs);
+}
+
+function renderLogs(logs){
+    const stream = document.getElementById("console-stream");
+    let list = logs || [];
+
+    if(activeLogFilter === "match") list = list.filter(l => String(l.message || "").toLowerCase().includes("match"));
+    else if(activeLogFilter === "success") list = list.filter(l => l.level === "success" || String(l.message || "").includes("EXP"));
+    else if(activeLogFilter === "error") list = list.filter(l => l.level === "error" || l.level === "warning");
+
+    stream.innerHTML = list.map(l=>`
+        <div class="log-line">
+            <span class="log-ts">[${esc(l.time || "00:00:00")}]</span>
+            <span class="log-msg ${l.level || "info"}">> ${esc(l.message || "")}</span>
+        </div>
+    `).join("");
+
+    if(autoScroll) stream.scrollTop = stream.scrollHeight;
+}
+
+async function clearLogs(){
+    try {
+        await fetch("/api/logs/clear", {method:"POST"});
+        cachedLogs = [];
+        renderLogs([]);
+        toast("Server logs wiped clean.", "success");
+    } catch(e){ toast("Failed to clear logs on backend", "error"); }
+}
+
+function toggleAutoScroll(){
+    autoScroll = !autoScroll;
+    const btn = document.getElementById("btn-autoscroll");
+    if(autoScroll) {
+        btn.style.background = "rgba(138,43,226,0.2)";
+        btn.style.color = "#fff";
+        document.getElementById("console-stream").scrollTop = 999999;
+    } else {
+        btn.style.background = "transparent";
+        btn.style.color = "var(--text-dim)";
+    }
+}
+
+function handleLogScroll(){
+    const s = document.getElementById("console-stream");
+    if(s.scrollHeight - s.scrollTop - s.clientHeight > 80) {
+        autoScroll = false;
+        const btn = document.getElementById("btn-autoscroll");
+        btn.style.background = "transparent";
+        btn.style.color = "var(--text-dim)";
+    }
+}
+
+/* ============================================
+   REAL API FETCH (STATS)
+============================================ */
+async function fetchStats(){
+    try {
+        const r = await fetch("/api/stats");
+        if(!r.ok) throw new Error("HTTP " + r.status);
+        const d = await r.json();
+
+        const accs = Array.isArray(d.accounts) ? d.accounts : [];
+        const logs = Array.isArray(d.logs) ? d.logs : [];
+
+        setText("stat-accounts", d.total_accounts ?? accs.length);
+        setText("stat-started", d.total_matches_started || 0);
+        setText("stat-exp", "+" + Number(d.total_gained_exp || 0).toLocaleString());
+        setText("stat-active-matches", (d.total_active_matches || 0) + " Active");
+
+        const onlineCount = accs.filter(a => a.status === "ONLINE" || a.status === "IN_MATCH").length;
+        setText("stat-online", onlineCount + " Nodes Connected");
+
+        const uptimeH = Math.max(0.016, (d.uptime || 60) / 3600);
+        const perH = Math.round((d.total_matches_started || 0) / uptimeH);
+        setText("stat-per-hour", "~" + perH + " / hour");
+        setText("stat-exp-rate", "~" + Number(d.exp_per_hour || 0).toLocaleString() + " EXP/hr");
+
+        cachedAccounts = accs;
+        cachedLogs = logs;
+
+        renderAccounts(accs);
+        renderLogs(logs);
+        
+        document.getElementById('side-status').innerText = 'ONLINE';
+        document.getElementById('side-status').style.color = 'var(--villain-green)';
+
+    } catch(e) {
+        console.warn("Backend Sync Error:", e);
+        document.getElementById('side-status').innerText = 'OFFLINE';
+        document.getElementById('side-status').style.color = 'var(--villain-red)';
+    }
+}
+
+/* ============================================
+   UTILITY HELPERS
+============================================ */
+function copyUid(uid){
+    if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(uid).then(()=> toast("Copied Target UID: " + uid, "success"));
+    } else {
+        toast("UID: " + uid, "info");
+    }
+}
+
+function setText(id, v){
+    const el = document.getElementById(id);
+    if(el) el.innerText = v ?? "";
+}
+
+function esc(s){
+    if(s === null || s === undefined) return "";
+    return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function escAttr(s){ return esc(s); }
+
+function fmtDur(sec){
+    sec = Math.max(0, Math.floor(Number(sec) || 0));
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if(h > 0) return `${h}h ${String(m).padStart(2,"0")}m`;
+    return `${String(m).padStart(2,"0")}m ${String(s).padStart(2,"0")}s`;
+}
+
+/* ============================================
+   LIVE UPTIME TIMER
+============================================ */
+setInterval(()=>{
+    const el = Math.floor((Date.now() - clientStart) / 1000);
+    const h = String(Math.floor(el / 3600)).padStart(2, "0");
+    const m = String(Math.floor((el % 3600) / 60)).padStart(2, "0");
+    const s = String(el % 60).padStart(2, "0");
+    setText("stat-uptime", `${h}:${m}:${s}`);
+
+    document.querySelectorAll(".acc-time").forEach(u=>{
+        if(u.dataset.paused === "1") return;
+        let v = parseInt(u.dataset.uptime || "0") + 1;
+        u.dataset.uptime = v;
+        u.innerHTML = `<i class="fa-solid fa-stopwatch"></i> ${fmtDur(v)}`;
+    });
+}, 1000);
+</script>
+</body>
+</html>
