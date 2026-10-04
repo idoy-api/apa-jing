@@ -38,10 +38,11 @@ from dashboard_server import bot_state, start_web_dashboard
 
 # ==================== CONFIGURATION ====================
 WEB_HOST = "0.0.0.0"
-WEB_PORT = 20331
-ACCOUNTS_FILE = "accounts.json"
-TOKEN_CACHE_FILE = "token_cache.json"
-DEVICES_FILE = "devices.json"
+WEB_PORT = int(os.environ.get("PORT", "20331"))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ACCOUNTS_FILE = os.path.join(BASE_DIR, "accounts.json")
+TOKEN_CACHE_FILE = os.path.join(BASE_DIR, "token_cache.json")
+DEVICES_FILE = os.path.join(BASE_DIR, "devices.json")
 TOKEN_CACHE_TTL = 1200
 
 # 🔥 Battle Royale Sequential Queue Configuration
