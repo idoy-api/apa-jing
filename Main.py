@@ -2301,12 +2301,12 @@ async def main():
     print_colored("╔════════════════════════════════════════════════════════════╗", Colors.CYAN)
     print_colored("║             ⚡ AUTO LEVEL UP BOT (BATTLE ROYALE) ⚡         ║", Colors.CYAN)
     print_colored("║            AUTOMATIC FULL MATCHES + INSTANT REQUEUE        ║", Colors.WHITE)
-    print_colored(f"║         Web Dashboard: http://localhost:{WEB_PORT}              ║", Colors.GREEN)
+    print_colored(f"║         Web Dashboard: http://0.0.0.0:{WEB_PORT}              ║", Colors.GREEN)
     print_colored("╚════════════════════════════════════════════════════════════╝", Colors.CYAN)
 
     try:
         await start_web_dashboard(host=WEB_HOST, port=WEB_PORT)
-        print_success(f"[✓] Dashboard UI Active: http://localhost:{WEB_PORT}")
+        print_success(f"[✓] Dashboard UI Active: http://0.0.0.0:{WEB_PORT}")
     except Exception as e:
         print_error(f"Could not start web dashboard: {e}")
 
@@ -2375,7 +2375,7 @@ async def main():
     accounts = load_accounts()
 
     if not accounts:
-        print_warning(f"[!] No accounts found in {ACCOUNTS_FILE}. Add accounts via Web Dashboard: http://localhost:{WEB_PORT}")
+        print_warning(f"[!] No accounts found in {ACCOUNTS_FILE}. Add accounts via Web Dashboard: http://0.0.0.0:{WEB_PORT}")
     else:
         print_success(f"[✓] Loaded {len(accounts)} accounts from {ACCOUNTS_FILE}")
 
